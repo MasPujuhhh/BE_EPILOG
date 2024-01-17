@@ -10,29 +10,27 @@ import TodoListModel from '../todo_list/model.js';
 import UserList from '../user_list/model.js';
 
 class TodoController{
-    static async todoListByAdmin(req, res){
+    static async getTodo(req, res){
         try {
-            const hasil = await sequelize.query(`select`, { type: QueryTypes.SELECT });
-
-            const data = {};
-            hasil.forEach(item => {
-                const key = `${item.id}_${item.todo_id}`;
-                if (!data[key]) {
-                    data[key] = { ...item, users:[{user_id:item.user_id, username:item.username}]};
-                } else {
-                    data[key].users.push({user_id:item.user_id, username:item.username})
-                }
-            });
-            const outputData = Object.values(data);
-
-            res.status(200).json({status:'OK', data:outputData})
+            const hasil = await sequelize.query(`select * from todo t where "deletedAt" isnull order by "createdAt" desc`, { type: QueryTypes.SELECT });
+            res.status(200).json({status:'OK', data:hasil})
         } catch (error) {
             console.log(error);
             res.status(500).json({code:490, message:error})
         } 
     }
 
-    static async todoListDetailByAdmin(req, res){
+    static async getTodoDone(req, res){
+        try {
+            const hasil = await sequelize.query(`select * from todo t where "deletedAt" isnull and todo_done = true order by "createdAt" desc`, { type: QueryTypes.SELECT });
+            res.status(200).json({status:'OK', data:hasil})
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({code:490, message:error})
+        } 
+    }
+
+    static async getTodoDetailById(req, res){
         try {
             const hasil = await sequelize.query(`select * from todo_list tl
             left join todo t on tl.todo_id = t.id
@@ -41,7 +39,21 @@ class TodoController{
             left join users u on ul.user_id = u.id 
             where tl.todo_id = '${req.params.id}'`, {type: QueryTypes.SELECT})
 
-            res.status(200).json({status:'OK', data:hasil})
+            const data = {};
+            hasil.forEach(item => {
+                const key = `${item.id}_${item.todo_id}`;
+                if (!data[key]) {
+                    data[key] = { title:item.title,description:item.description, done:item.done, todo_done:item.todo_done, status:item.status , data:[item]};
+                } else {
+                    data[key].data.push(item)
+                }
+            });
+            const outputData = Object.values(data);
+
+
+
+            // console.log(outputData)
+            res.status(200).json({status:'OK', data:outputData})
         } catch (error) {
             console.log(error);
             res.status(500).json({code:490, message:error})
@@ -65,33 +77,12 @@ class TodoController{
         } 
     }
 
-    static async todoListByIdforUser(req, res){
-        try {
-            const todo = await sequelize.query(`select t.* from todo t
-            left join user_list ul on ul.todo_id = t.id
-            left join users u on ul.user_id = u.id
-            where ul.user_id = '${req.user.id}'`, {type: QueryTypes.SELECT})
 
-            // const hasil = await sequelize.query(`select  tl.id, tl.todo_id, t.title, t.status, t.due_date, t.created_by ,l.id, l.description , l.done, ul.user_id, u.username from todo_list tl
-            // join todo t on t.id = tl.todo_id 
-            // join list l on l.id = tl.list_id
-            // join user_list ul on ul.todo_id = t.id
-            // join users u on u.id = ul.user_id
-            // where ul.user_id = '${req.user.id}'`, {type: QueryTypes.SELECT})
-
-            res.status(200).json({status:'OK', data:todo})
-        } catch (error) {
-            console.log(error);
-            res.status(500).json({code:490, message:error})
-        } 
-    }
-
-
-    static async todoListDetail(req, res){
+    static async getTodoByToken(req, res){
         try {
             const hasil = await sequelize.query(`select * from todo_list tl
             left join list l on tl.list_id = l.id
-            where tl.todo_id = '${req.params.id}'`, {type: QueryTypes.SELECT})
+            where tl.todo_id = '${req.user.id}'`, {type: QueryTypes.SELECT})
 
             res.status(200).json({status:'OK', data:hasil})
         } catch (error) {
@@ -102,6 +93,7 @@ class TodoController{
 
     static async createTodo(req, res){
         try {
+            // console.log(req.user)
             let {title, deadline, users, todos} = req.body
             if (!title) throw new Error('title tidak boleh kosong/ harus diisi')
             if (!deadline) throw new Error('deadline tidak boleh kosong/ harus diisi')
@@ -131,6 +123,7 @@ class TodoController{
             if (!hasil) throw new Error('db-error')
             res.status(201).json({status:"berhasil open schedule!!", data:hasil})
         } catch (error) {
+            console.log(error)
             if (error.name == 'SequelizeUniqueConstraintError') {
                 res.status(500).json({pesan:"date sudah dibuat"})
             } else {
@@ -144,25 +137,6 @@ class TodoController{
         try {
             if (req.params.id == ':id') throw 'id kosong'
             const list = await ListModel.update({done:true}, {where:{id:req.params.id}, returning:true})
-
-            // const todo_list = await sequelize.query(`select * from todo_list where list_id='${list[1][0].id}'`, {type: QueryTypes.SELECT})
-            // const todo = await sequelize.query(`select * from todo where id='${todo_list[0].todo_id}'`, {type: QueryTypes.SELECT})
-            // const arr_todo_list = await sequelize.query(`select * from todo_list tl
-            // left join list l on tl.list_id = l.id
-            // where tl.todo_id = '${todo[0].id}'`, {type: QueryTypes.SELECT})
-
-            // let count = 0
-            // for (const key in arr_todo_list) {
-            //     if (arr_todo_list[key].done == true) {
-            //         count++
-            //     }
-            // }
-            // // if (count == arr_todo_list.length) {
-            // //     await 
-            // // }
-            // console.log(count)
-            // console.log(arr_todo_list.length)
-
             res.status(200).json({status:'list done!!', data:list[1][0]})
         } catch (error) {
             console.log(error);
@@ -170,15 +144,41 @@ class TodoController{
         } 
     }
 
-    static async completeListTodo(req, res){
+    static async completeListTodoById(req, res){
         try {
+            let data = await sequelize.query(`select * from todo where "deletedAt" isnull and id ='${req.params.id}'`, {type: QueryTypes.SELECT})
+
+            const currentDate = new Date();
+            const newDate = new Date(currentDate.getTime() + 7 * 60 * 60 * 1000);
+
+            let status
+            if (data[0].due_date < newDate) {
+                status = 0
+            } else {
+                status = 1
+            }
+
             if (req.params.id == ':id') throw 'id kosong'
-            const list = await Todo.update({status:true}, {where:{id:req.params.id}, returning:true})
+            const list = await Todo.update({todo_done:true, status}, {where:{id:req.params.id}, returning:true})
             if(list[0] == 0) throw "id tidak ada"
             res.status(200).json({status:'todo done!!', data:list[1][0]})
         } catch (error) {
             res.status(500).json({code:490, message:error})
         } 
+    }
+
+    static async deleteTodo(req, res){
+        try {
+            const hasil = await Todo.destroy({ where: { id: req.params.id }, returning: true })
+            if (hasil.length == 0) throw new Error('data not found')
+            res.status(200).json({status:'OK', data:hasil[0].dataValues})
+        } catch (error) {
+            if (error.name == 'SequelizeUniqueConstraintError') {
+                res.status(500).json({pesan:error.errors[0].message});
+            } else {
+                res.status(500).json({pesan:error.message});
+            }
+        }
     }
 }
 

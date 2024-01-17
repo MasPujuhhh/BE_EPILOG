@@ -75,6 +75,20 @@ class AttendanceController{
         } 
     }
 
+    static async getDataAttendanceByDate(req, res){
+        try {
+            const hasil = await sequelize.query(`select * from logbook l 
+            left join schedule s on s.id = l.schedule_id 
+            left join users u on u.id = l.user_id
+            where s.date = '%${req.params.date}%'
+            order by date desc`, { type: QueryTypes.SELECT });
+            res.status(200).json({status:'OK', data:hasil})
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({code:490, message:error})
+        } 
+    }
+
     static async getDataAttendanceById(req, res){
         try {
             const hasil = await sequelize.query(`select * from logbook l 

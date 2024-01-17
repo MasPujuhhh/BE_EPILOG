@@ -22,7 +22,7 @@ class Auth{
             let hasil = await jwt.verify(token[1]);
             if(hasil.role == 1 || hasil.role == 2){
                 // console.log('sd')
-                req.admin = hasil;
+                req.user = hasil;
                 next()
             } else{
                 res.status(500).json({pesan:"anda tidak punya akses"})
@@ -37,7 +37,7 @@ class Auth{
             let token = req.headers.authorization.split(" ")
             let hasil = await jwt.verify(token[1]);
             if(hasil.role == 2){
-                req.admin = hasil;
+                req.user = hasil;
                 next()
             } else{
                 res.status(500).json({pesan:"anda tidak punya akses"})

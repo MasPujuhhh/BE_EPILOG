@@ -37,6 +37,48 @@ class AttendanceController{
         } 
     }
 
+    static async getDataLogbookForDashboard(req, res){
+        try {
+            const hasil = await sequelize.query(`select l.*, s.date, u.username, u.company_role, u.fullname from logbook l
+            join schedule s on s.id = l.schedule_id
+            join users u on u.id = l.user_id 
+            where u."deletedAt" isnull 
+            order by s.date desc`, { type: QueryTypes.SELECT });
+            res.status(200).json({status:'OK', data:hasil})
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({code:490, message:error})
+        } 
+    }
+
+    static async getDataLogbookByDate(req, res){
+        try {
+            const hasil = await sequelize.query(`select l.*, s.date, u.username, u.company_role, u.fullname from logbook l
+            join schedule s on s.id = l.schedule_id
+            join users u on u.id = l.user_id 
+            where u."deletedAt" isnull and s.date = '%${req.params.date}%'
+            order by s.date desc`, { type: QueryTypes.SELECT });
+            res.status(200).json({status:'OK', data:hasil})
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({code:490, message:error})
+        } 
+    }
+    static async getDataLogbookByDateAndNeedAproval(req, res){
+        try {
+            const hasil = await sequelize.query(`select l.*, s.date, u.username, u.company_role, u.fullname from logbook l
+            join schedule s on s.id = l.schedule_id
+            join users u on u.id = l.user_id 
+            where u."deletedAt" isnull and s.date = '%${req.params.date}%'
+            and status = 1 or status = 3
+            order by s.date desc`, { type: QueryTypes.SELECT });
+            res.status(200).json({status:'OK', data:hasil})
+        } catch (error) {
+            console.log(error);
+            res.status(500).json({code:490, message:error})
+        } 
+    }
+
     static async logbookListUser(req, res){
         try {
             const hasil = await sequelize.query(`select l.*, s.date, u.username, u.company_role, u.fullname from logbook l
@@ -51,8 +93,6 @@ class AttendanceController{
             res.status(500).json({code:490, message:error})
         } 
     }
-
-    static async 
 
     static async createLogbook(req, res){
         try {
