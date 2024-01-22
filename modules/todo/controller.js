@@ -80,9 +80,29 @@ class TodoController{
 
     static async getTodoByToken(req, res){
         try {
-            const hasil = await sequelize.query(`select * from todo_list tl
-            left join list l on tl.list_id = l.id
-            where tl.todo_id = '${req.user.id}'`, {type: QueryTypes.SELECT})
+            const hasil = await sequelize.query(`select t.* from todo t 
+            left join user_list ul on ul.todo_id = t.id 
+            where ul.user_id = '${req.user.id}' and t."deletedAt" isnull
+            or t.id = 'tes'`, {type: QueryTypes.SELECT})
+
+            const todo = await sequelize.query(`select t.*, l.description , l.done from todo t 
+            left join todo_list tl on tl.todo_id = t.id
+            left join list l on tl.list_id  = l.id 
+            left join user_list ul on ul.todo_id = t.id 
+            where ul.user_id = '${req.user.id}' and t."deletedAt" isnull
+            or t.id = 'tes'`, {type: QueryTypes.SELECT})
+
+            for (const key in hasil) {
+                let todox = []
+                for (const keys in todo) {
+                    // console.log(hasil[key].id, 'sad',todo[keys].id)
+                    if (hasil[key].id == todo[keys].id) {
+                        
+                        todox.push(todo[keys])
+                    }
+                }
+                hasil[key].todo = todox
+            }
 
             res.status(200).json({status:'OK', data:hasil})
         } catch (error) {

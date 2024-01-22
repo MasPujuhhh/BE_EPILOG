@@ -10,7 +10,7 @@ class CommentContreller{
     static async commentList(req, res){
         try {
             // console.timeLog('sa')
-            const hasil = await sequelize.query("SELECT * FROM comment", { type: QueryTypes.SELECT });
+            const hasil = await sequelize.query(`SELECT * FROM comment where "deletedAt" is null`, { type: QueryTypes.SELECT });
             res.status(200).json({status:'OK', data:hasil})
         } catch (error) {
             // console.log(error.message);
@@ -71,8 +71,6 @@ class CommentContreller{
 
     static async deleteComment(req, res){
         try {
-            // let {user_id} = req.body;
-            // if (!user_id) throw new Error('user_id cannot be an empty field')
             const hasil = await Comment.destroy({ where: { id: req.params.id }, returning: true })
             if (hasil.length == 0) throw new Error('data not found')
             res.status(200).json({status:'OK', data:hasil[0].dataValues})

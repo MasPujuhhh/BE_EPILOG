@@ -211,8 +211,22 @@ class Controller{
 
     static async editUserById(req, res){
         try {
-            let {email, username} = req.body;
-            const hasil = await User.update({email, username}, { where: { id: req.user.id }, returning: true, })
+            let {email, username, address, school, fullname} = req.body;
+
+            let cek_email_username = await sequelize.query(`SELECT * from users where id='${req.user.id}';`, { type: QueryTypes.SELECT })
+            let cek_data = await sequelize.query(`SELECT * from users where "deletedAt" is null;`, { type: QueryTypes.SELECT })
+
+            // console.log(cek_email_username)
+            for (let i = 0; i < cek_data.length; i++) {
+                if (cek_data[i].username == username && cek_data[i].username != cek_email_username[0].username) {
+                    throw new Error('username sudah digunakan')
+                }
+                if (cek_data[i].email == email && cek_data[i].email != cek_email_username[0].email) {
+                    throw new Error('email sudah digunakan')
+                }
+            }
+            // console.log(email, username, address, school, fullname)
+            const hasil = await User.update({email, username, address, school, fullname}, { where: { id: req.user.id }, returning: true, })
             if (!hasil) throw new Error('data not found')
             res.status(200).json({status:'OK', data:hasil[1][0]})
 

@@ -22,7 +22,7 @@ const Todo = sequelize.define('todo', {
           type: DataTypes.STRING,
           allowNull: false,
         },
-        status: {
+        status_pengumpulan: {
           type: DataTypes.INTEGER,
           // allowNull: false,
         },
